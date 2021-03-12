@@ -1,0 +1,290 @@
+---
+title: "Case Study 2 - MAP566"
+output: html_notebook
+---
+## 1. Fitting a linear model
+
+### 1.1 Plot the data
+```{r}
+data <- read.csv("/Users/haliouanaomie/PolytechniqueS2/MAP566/salesData/sales1.csv")
+head(data)
+summary(data)
+dim(data)
+```
+
+The data consists of 21 observations (rows) and 2 variables (columns): time and the quarterly sales volumes in percentage y.
+
+Let's scatter plot the data in order to better visualize the relationship between the explanatory variable and the response variable. 
+```{r}
+library(ggplot2)
+theme_set(theme_bw())
+pl <- ggplot(data=data) + geom_point(aes(x=time,y=y), color="red", size=3) + xlab("Time t") + ylab("Quarterly sales volumes (in %)")
+pl
+```
+
+We easily observe on the above scatter plot that there is a clear increasing trend in our data. It suggests a linearly increasing relationship between the explanatory and response variables.
+
+
+### 1.2 Fit a polynomial model to this data (justify the choice of the degree)
+
+Based on this data, our objective is to fit a polynomial model to this data by building a regression model of the form: 
+$$y_j = f(x_j) + e_j \quad ; \quad 1 \leq j \leq n$$
+where $(xj,1≤j≤n)$ and $(yj,1≤j≤n)$ represent, respectively, the n=21 measured time and quarterly sales volumes and where $(ej,1≤j≤n)$ is a sequence of residual errors. In other words, ej represents the difference between the sale volume predicted by the model f(xj) and the observed sale volume yj.
+
+We will restrict ourselves to polynomial regression, by considering functions of the form
+
+$f(x)=f(x;c0,c1,c2,…,cd)=c0+c1x+c2x2+…+cdxd$
+
+As said earlier, we can easily observe that there is a clear increasing trend in our data. Thus, the function we should be considering is at least of degree 1, and intuitively we can think that the best model will be of degree 1. Let us therefore assume a linear trend and fit a polynomial of degree 1 using the lm function:
+</br>
+
+**Fitting a polynomial of degree 1**
+
+$yj=c0+c1xj+ej;1≤j≤n$
+
+```{r}
+lm1 <- lm(y ~ time, data=data)
+coef(lm1)
+```
+
+These coefficients are the intercept and the slope of the regression line, but more informative results about this model are available.
+
+```{r}
+summary(lm1)
+```
+
+The slope `c1` is clearly statistically significant (p-value = 1.17e-11) while the model explains about 91% of the variability of the data. The confidence interval for c1 confirms that an increase of the time leads to a significant increase of the variable y.
+The residuals are approximately zero.
+
+```{r}
+confint(lm1)
+```
+
+Rhese numbers refer to how percentage of the data is bellow of these limits. So, we have 2.5% of the value bellow 98.009 and 97.5% of the value bellow 101.98.
+
+The fact that the slope is significantly different from zero does not imply that this polynomial model of degree 1 correctly describes the data: at this stage, we can only conclude that a polynomial of degree 1 better explains the variability of the data than a constant model.<br>
+
+Diagnostic plots are visual tools that allows one to see if something is not right between a chosen model and the data it is hypothesized to describe.<br>
+
+First, we can add the regression line to the plot of the data.
+
+```{r}
+pl  + geom_abline(intercept=coef(lm1)[1],slope=coef(lm1)[2],size=1, colour="#339900")
+```
+
+
+The regression line decribes pretty well the global trend in the data: based on this graphic, there is no reason to reject the model. Several diagnotic plots are available for a lm object. The first two are a plot of residuals against fitted values and a normal QQ plot. 
+
+
+```{r}
+par(mfrow = c(1, 2))
+plot(lm1, which=c(1,2))
+```
+The residual plot shows a slight (decreasing and increasing) trend which suggests that the residuals are not identically distributed around 0. Furthermore, the QQ plot shows that the extreme residual values are not the extreme values of a normal distribution. It may be therefore necessary to improve the regression model.
+
+**Fitting a polynomial of degree 2**
+
+We can expect to better describe the extreme values by using a polynomial of higher degree. Let us therefore fit a polynomial of degree 2 to the data.
+$yj=c0+c1xj+c2x2j+ej;1≤j≤n$
+
+```{r}
+
+lm2 <- lm (y ~  time + I(time^2), data =data)
+summary(lm2)
+```
+ c2 is clearly statistically significant while the model explains about 91.7% of the variability of the data. The residuals are approximately zero.
+ 
+```{r}
+pl  + geom_line(aes(x=time, y=predict(lm2)),size=1, colour="#339900")
+```
+Again, the regression line decribes pretty well the global trend in the data: based on this graphic, there is no reason to reject the model. Several diagnotic plots are available for a lm object. The first two are a plot of residuals against fitted values and a normal QQ plot.
+```{r}
+par(mfrow = c(1, 2))
+plot(lm2, which=c(1,2))
+```
+The residual plot shows a linear trend which suggests that the residuals are identically distributed around 0. Furthermore, the QQ plot shows that the extreme residual values are not the extreme values of a normal distribution. It may be therefore necessary to improve the regression model.
+ 
+**Fitting a polynomial of degree 5**
+
+```{r}
+lm6 <- lm(y ~ poly(time, degree=5), data=data)
+summary(lm6)
+```
+
+The slope `c1` is clearly statistically significant (p-value = 3.42-07) while the model explains about 92% of the variability of the data. The confidence interval for c1 confirms that an increase of the time leads to a significant increase of the variable y. The residuals are approximately zero.
+
+```{r}
+pl  + geom_line(aes(x=time, y=predict(lm6)),size=1, colour="#339900")
+```
+
+
+```{r}
+par(mfrow = c(1, 2))
+plot(lm6, which=c(1,2))
+```
+The QQ plot is obtained by plotting the standardized residual. The residual are normally distributed because then the points are randomly distributed around the line y=x. The residual plot shows a linear line which suggests that the residuals are identically distributed around 0. We choose to keep this model with a degree of 5.
+
+We use **the Bayesian information criaterion (BIC)** for comparing models which are not necessarily nested.
+```{r}
+BIC(lm1,lm2,lm6)
+
+AIC(lm1,lm2,lm6)
+```
+Models with lowest BIC and AIC are preferred. Here, both criteria agree for rejecting lm0 with high confidence. Both BIC and AIC has a very slight preference for lm1 and lm2. Nevertheless, these differences are not large enough for selecting definitely any of these 2 models.
+
+### 1.3 Try to improve the model by adding a periodic component
+
+$cos(2πt/T)$ and $sin(2πt/T)$ are periodic functions of period T. Looking at the residual plots we observe a dominant cyclical oscillation of period 3s
+
+ $f(x)=c0+c1x+c2x2+c3x3+c4x4+c5x5+e5$
+
+```{r}
+lin_mod_per <- lm(y ~ time + (cos((2*pi)*time/3)) + (sin((2*pi)*time/3)), data=data)
+summary(lin_mod_per)
+```
+```{r}
+pl + geom_abline(intercept=coef(lin_mod_per)[1], slope=coef(lin_mod_per)[2], size=1, colour="#339900")
+```
+```{r}
+par(mfrow = c(1, 2))
+plot(lin_mod_per, which=c(1,2))
+```
+###1.4 Plot on a same graph the observed sales together with the predicted sales given by your final model. What do you think about this model? What about the residuals?
+
+A common practice is to split the dataset into a 80:20 sample (training:test), then, build the model on the 80% sample and then use the model thus built to predict the reponse variable on test data. Doing it this way, we will have the model predicted values for the 20% data (test). We can then see how the model will perform with this ``new’’ data, by comparing these predicted values with the original ones. We can alo check the stability of the prediction given by the model, by comparing these predicted values with those obtained previouly, when the complete data were used for building the model.
+Let us first randomly define the training and test samples:
+
+```{r}
+set.seed(100)
+n <- nrow(data)
+i.training <- sort(sample(n,round(n*0.8)))
+data.training <- data[i.training,]
+data.test <- data[-i.training,]
+
+pred1a.test <- predict(lm6, newdata=data.test)
+
+lm6.training <- lm(y ~ poly(time, degree=2), data=data.training)
+pred1b.test <- predict(lm6.training, newdata=data.test)
+
+
+data.frame(data.test, pred1a.test, pred1b.test)
+```
+
+```{r}
+y.test <- data.test$y
+par(mfrow=c(1,2))
+plot(pred1b.test, y.test)
+abline(a=0, b=1, lty=2)
+plot(pred1b.test, pred1a.test)
+abline(a=0, b=1, lty=2)
+```
+On one hand, it is reassuring to see that removing part of the data has a very little impact on the predictions (right graph). On the other hand, the predictive performance of the model remains limited because of the natural variability of the data (left graph).
+```{r}
+cor.test <- cor(pred1a.test, y.test)
+R2.test <- cor.test^2
+R2.test
+```
+Indeed, this model built with the training sample explains 92.7 % of the variability of the new test sample.
+
+### 1.5 We want the predicted sales volume to be equal to 100 at time 0. Modify your final model in order to take this constraint into account.
+
+?
+
+## 2 Fitting a linear mixed effects model
+
+```{r}
+sales30 <- read.csv("/Users/haliouanaomie/PolytechniqueS2/MAP566/salesData/sales30.csv")
+head(sales30)
+summary(sales30)
+dim(sales30)
+```
+The Orthodont data has 630 rows and 3 columns.
+### 2.1 Plot this data
+
+Let us plot the data, i.e. the time versus y by id:
+```{r}
+library(ggplot2)
+theme_set(theme_bw())
+pl <- ggplot(data=sales30, aes(x=time,y=y,color=id)) + geom_point() + geom_line()
+pl
+```
+
+### 2.2 Fit a Linear Model to this data
+
+A linear model by definition assumes there is a linear relationship between the observations (yj,1≤j≤n) and m series of variables `(x(1)j,…,x(m)j,1≤j≤n)` :` yj=c0+c1x(1)j+c2x(2)j+⋯+cmx(m)j+ej,1≤j≤n,` where `(ej,1≤j≤n)`is a sequence of residual errors.
+In our example, the observations `(yj,1≤j≤n)` are the n=630 measured distances.
+
+We are fitting the second model used previously.
+```{r}
+lm2 <- lm(y~time+id, data=sales30)
+summary(lm2)
+``` 
+```{r}
+sales30$pred.lm2 <- predict(lm2)
+pl + geom_line(data=sales30,aes(x=time,y=pred.lm2)) + facet_wrap(~id)
+```
+We see that the model seems to underestimate or overestimate the individual data.
+
+### 2.3 Fit a mixed effect model to this data
+
+The model is called linear mixed effects model because it is a linear combination of fixed and random effects. We can use the function lmer for fitting this model. By default, the restricted mximum likelihood (REML) method is used.
+
+```{r}
+library(lme4)
+lme1 <- lmer(y ~ time  + (1|id), data=sales30)
+summary(lme1)
+```
+```{r}
+pl + geom_line(aes(x=time,y=predict(lme1),color=id)) + facet_wrap(~id)
+```
+```{r}
+lme2 <- lmer(y ~ time  + (-1+time|id), data=sales30)
+summary(lme2)
+```
+
+```{r}
+pl + geom_line(aes(x=time,y=predict(lme2),color=id)) + facet_wrap(~id)
+```
+```{r}
+lme3 <- lmer(y ~ time  + (time|id), data=sales30)
+summary(lme3)
+```
+
+The warning just indicates that one or more variances are (very close to) zero.
+
+```{r}
+pl + geom_line(aes(x=time,y=predict(lme3),color=id)) + facet_wrap(~id)
+```
+```{r}
+BIC(lme1,lme2,lme3)
+AIC(lme1,lme2,lme3)
+```
+The best model, according to BIC, is model lme2 that assumes different fixed slopes for different ids and a random intercept.
+
+We can compute 95% profile-based confidence intervals for the parameters of the model:
+```{r}
+confint(lme2)
+```
+
+Parametric bootstrap can also be used for computing confidence intervals:
+```{r}
+confint(lme2,method="boot")
+```
+There is only one random effect in the final model. We can plot 95% prediction intervals on the random effects (ηi)
+
+```{r}
+library(lattice)
+d = dotplot(ranef(lme2, condVar = TRUE))
+print(d[[1]])
+```
+### 2.4 Plot the data with the predicted sales given by your final model.
+
+Let us plot the predicted time together with the observed time.
+
+```{r}
+ pl + geom_line(data=sales30 ,aes(x=time,y=predict(lme2))) + facet_wrap(~ id )
+```
+We can also check that the predicted distances for a given individual (“id=2” for instance)
+```{r}
+subset(sales30,id == "2")
+```
