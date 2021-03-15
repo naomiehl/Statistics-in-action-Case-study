@@ -1,4 +1,4 @@
-# Statistics_Case_Study_2
+# Statistics Case Study 2
 MAP566 -  Statistics in Action
 
 ## Preliminary comments:
