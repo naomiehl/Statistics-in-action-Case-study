@@ -4,6 +4,8 @@ output: html_notebook
 ---
 ## 1. Fitting a linear model
 
+The file sales1.csv consists of quarterly sales volumes (in % and indexed to the time 0) of a product.
+
 ### 1.1 Plot the data
 ```{r}
 data <- read.csv("/Users/haliouanaomie/PolytechniqueS2/MAP566/salesData/sales1.csv")
@@ -12,13 +14,13 @@ summary(data)
 dim(data)
 ```
 
-The data consists of 21 observations (rows) and 2 variables (columns): time and the quarterly sales volumes in percentage y.
+The data consists of 21 observations (rows) and 2 variables (columns): time in months and the quarterly sales volumes in percentage y.
 
 Let's scatter plot the data in order to better visualize the relationship between the explanatory variable and the response variable. 
 ```{r}
 library(ggplot2)
 theme_set(theme_bw())
-pl <- ggplot(data=data) + geom_point(aes(x=time,y=y), color="red", size=3) + xlab("Time t") + ylab("Quarterly sales volumes (in %)")
+pl <- ggplot(data=data) + geom_point(aes(x=time,y=y), color="red", size=3) + xlab("Time t(in months)") + ylab("Quarterly sales volumes (in %)")
 pl
 ```
 
@@ -35,10 +37,11 @@ We will restrict ourselves to polynomial regression, by considering functions of
 
 $f(x)=f(x;c0,c1,c2,…,cd)=c0+c1x+c2x2+…+cdxd$
 
+**Fitting a polynomial of degree 1**
+
 As said earlier, we can easily observe that there is a clear increasing trend in our data. Thus, the function we should be considering is at least of degree 1, and intuitively we can think that the best model will be of degree 1. Let us therefore assume a linear trend and fit a polynomial of degree 1 using the lm function:
 </br>
 
-**Fitting a polynomial of degree 1**
 
 $yj=c0+c1xj+ej;1≤j≤n$
 
@@ -60,7 +63,7 @@ The residuals are approximately zero.
 confint(lm1)
 ```
 
-Rhese numbers refer to how percentage of the data is bellow of these limits. So, we have 2.5% of the value bellow 98.009 and 97.5% of the value bellow 101.98.
+Rhese numbers refer to how percentage of the data is bellow of these limits. So, we have 2.5% of the value bellow 98.009 and 97.5% of the value bellow 101.98. The confidence interval for c1 confirms that an increase of the time leads to an increase of the sale volume.
 
 The fact that the slope is significantly different from zero does not imply that this polynomial model of degree 1 correctly describes the data: at this stage, we can only conclude that a polynomial of degree 1 better explains the variability of the data than a constant model.<br>
 
@@ -73,15 +76,24 @@ pl  + geom_abline(intercept=coef(lm1)[1],slope=coef(lm1)[2],size=1, colour="#339
 ```
 
 
-The regression line decribes pretty well the global trend in the data: based on this graphic, there is no reason to reject the model. Several diagnotic plots are available for a lm object. The first two are a plot of residuals against fitted values and a normal QQ plot. 
+The regression line decribes pretty well the global trend in the data: based on this graphic, there is no reason to reject the model. At this stage, we can only conclude that a polynomial of degree 1 visually seems to fit our data. Several diagnotic plots are available for a lm object. The first two are a plot of residuals against fitted values and a normal QQ plot. 
 
 
 ```{r}
 par(mfrow = c(1, 2))
 plot(lm1, which=c(1,2))
 ```
-The residual plot shows a slight (decreasing and increasing) trend which suggests that the residuals are not identically distributed around 0. Furthermore, the QQ plot shows that the extreme residual values are not the extreme values of a normal distribution. It may be therefore necessary to improve the regression model.
+The residual plot shows a slight decreasing then increasing trend which suggests that the residuals are not identically distributed around 0 and that linearity is violated There seems to be a polynomial relationship (with degree largr than 1). Furthermore, the Quantile-Quantile plot shows that the extreme residual values are not the extreme values of a normal distribution.
+We observe that, points 3, 17 and 19 may be outliers, with large residual values.
+</br>
 
+```{r}
+
+hist(resid(lm1))
+
+```
+Histogram of the Residuals show that the deviation is not normally distributed.
+<br>
 **Fitting a polynomial of degree 2**
 
 We can expect to better describe the extreme values by using a polynomial of higher degree. Let us therefore fit a polynomial of degree 2 to the data.
@@ -102,8 +114,14 @@ Again, the regression line decribes pretty well the global trend in the data: ba
 par(mfrow = c(1, 2))
 plot(lm2, which=c(1,2))
 ```
-The residual plot shows a linear trend which suggests that the residuals are identically distributed around 0. Furthermore, the QQ plot shows that the extreme residual values are not the extreme values of a normal distribution. It may be therefore necessary to improve the regression model.
+The residual plot shows a linear trend which suggests that the residuals are identically distributed around 0. Furthermore, the QQ plot shows that the extreme residual values are not the extreme values of a normal distribution. 
  
+```{r}
+
+hist(resid(lm2))
+
+```
+Histogram of the Residuals show that the deviation is not normally distributed.
 **Fitting a polynomial of degree 5**
 
 ```{r}
@@ -111,7 +129,7 @@ lm6 <- lm(y ~ poly(time, degree=5), data=data)
 summary(lm6)
 ```
 
-The slope `c1` is clearly statistically significant (p-value = 3.42-07) while the model explains about 92% of the variability of the data. The confidence interval for c1 confirms that an increase of the time leads to a significant increase of the variable y. The residuals are approximately zero.
+The slope `c1` is clearly statistically significant (p-value = 3.42-07) while the model explains about 91.8% of the variability of the data. The confidence interval for c1 confirms that an increase of the time leads to a significant increase of the variable y. The residuals are approximately zero.
 
 ```{r}
 pl  + geom_line(aes(x=time, y=predict(lm6)),size=1, colour="#339900")
@@ -124,31 +142,52 @@ plot(lm6, which=c(1,2))
 ```
 The QQ plot is obtained by plotting the standardized residual. The residual are normally distributed because then the points are randomly distributed around the line y=x. The residual plot shows a linear line which suggests that the residuals are identically distributed around 0. We choose to keep this model with a degree of 5.
 
+```{r}
+hist(resid(lm6))
+```
+Histogram of the Residuals show that the deviation is not normally distributed.
+
 We use **the Bayesian information criaterion (BIC)** for comparing models which are not necessarily nested.
 ```{r}
 BIC(lm1,lm2,lm6)
 
 AIC(lm1,lm2,lm6)
 ```
-Models with lowest BIC and AIC are preferred. Here, both criteria agree for rejecting lm0 with high confidence. Both BIC and AIC has a very slight preference for lm1 and lm2. Nevertheless, these differences are not large enough for selecting definitely any of these 2 models.
+Models with lowest BIC and AIC are preferred. Here, both criteria agree for rejecting lm6 with high confidence. Both BIC and AIC has a very slight preference for lm1 and lm2. Nevertheless, these differences are not large enough for selecting definitely any of these 2 models.
 
 ### 1.3 Try to improve the model by adding a periodic component
 
-$cos(2πt/T)$ and $sin(2πt/T)$ are periodic functions of period T. Looking at the residual plots we observe a dominant cyclical oscillation of period 3s
+$cos(2πt/T)$ and $sin(2πt/T)$ are periodic functions of period T. Looking at the scatter plot we observe a cyclical oscillation of period 1 year with T=12.
 
  $f(x)=c0+c1x+c2x2+c3x3+c4x4+c5x5+e5$
 
 ```{r}
-lin_mod_per <- lm(y ~ time + (cos((2*pi)*time/3)) + (sin((2*pi)*time/3)), data=data)
-summary(lin_mod_per)
+T <- 12
+mod_per <- lm(y ~ time + I(time^2) + I(time^3) + I(time^4) + I(time^5) +
+                I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)), data=data )
+summary(mod_per)
 ```
+
+It seems that the most influant variables of our modl are the sine and cosine terms, then the degree 1 polynomial term.
+Here is the comparison of the previously selected model and the one with the periodic components:
+
 ```{r}
-pl + geom_abline(intercept=coef(lin_mod_per)[1], slope=coef(lin_mod_per)[2], size=1, colour="#339900")
+
+f <- function(x,c) coef(mod_per)[1] + coef(mod_per)[2]*x + coef(mod_per)[3]*x^2 + coef(mod_per)[4]*x^3 + coef(mod_per)[5]*x^4 + coef(mod_per)[6]*x^5 + coef(mod_per)[7]*cos(2*pi*x/T) + coef(mod_per)[8]*sin(2*pi*x/T)
+
+pl + geom_line(data=data, aes(x=time, y=predict(poly_reg_5)), size=0.5, colour="#339900") + stat_function(fun=f, colour="red", size=0.5)
 ```
 ```{r}
 par(mfrow = c(1, 2))
-plot(lin_mod_per, which=c(1,2))
+plot(mod_per, which=c(1,2))
 ```
+The residual plot shows a slight decreasing then increasing trend which suggests that the residuals are not identically distributed around 0 and that linearity is violated. Furthermore, the Quantile-Quantile plot shows that the extreme residual values are not the extreme values of a normal distribution.
+
+```{r}
+hist(resid(mod_per))
+```
+Histogram of the Residuals show that the deviation is not normally distributed.
+
 ###1.4 Plot on a same graph the observed sales together with the predicted sales given by your final model. What do you think about this model? What about the residuals?
 
 A common practice is to split the dataset into a 80:20 sample (training:test), then, build the model on the 80% sample and then use the model thus built to predict the reponse variable on test data. Doing it this way, we will have the model predicted values for the 20% data (test). We can then see how the model will perform with this ``new’’ data, by comparing these predicted values with the original ones. We can alo check the stability of the prediction given by the model, by comparing these predicted values with those obtained previouly, when the complete data were used for building the model.
@@ -161,9 +200,8 @@ i.training <- sort(sample(n,round(n*0.8)))
 data.training <- data[i.training,]
 data.test <- data[-i.training,]
 
-pred1a.test <- predict(lm6, newdata=data.test)
-
-lm6.training <- lm(y ~ poly(time, degree=2), data=data.training)
+pred1a.test <- predict(lm1, newdata=data.test)
+lm6.training <- lm(y ~ time, data=data.training)
 pred1b.test <- predict(lm6.training, newdata=data.test)
 
 
@@ -179,51 +217,106 @@ plot(pred1b.test, pred1a.test)
 abline(a=0, b=1, lty=2)
 ```
 On one hand, it is reassuring to see that removing part of the data has a very little impact on the predictions (right graph). On the other hand, the predictive performance of the model remains limited because of the natural variability of the data (left graph).
+
 ```{r}
 cor.test <- cor(pred1a.test, y.test)
 R2.test <- cor.test^2
 R2.test
 ```
-Indeed, this model built with the training sample explains 92.7 % of the variability of the new test sample.
+Indeed, this model built with the training sample explains 92. % of the variability of the new test sample.
+
+**Confidence intervale and prediction intervale:**
+
+```{r}
+alpha <- 0.05
+df.new <- data.frame(time=(0:60))
+conf.weight <- predict(lm2, newdata = df.new, interval="confidence", level=1-alpha) 
+head(conf.weight)
+```
+A prediction interval for a new measured distance $y=f(x)+e$ can also be computed. This prediction interval takes into account both the uncertainty on the predicted distance f(x) and the variability of the measure, represented in the model by the residual error e.
+
+```{r}
+pred.weight <- predict(lm2, newdata = df.new, interval="prediction", level=1-alpha) 
+head(pred.weight)
+```
+Let us plot these two intervals.
+```{r}
+df.new[c("fit","lwr.conf", "upr.conf")] <- conf.weight
+df.new[c("lwr.pred", "upr.pred")] <- pred.weight[,2:3]
+pl +   
+  geom_ribbon(data=df.new, aes(x=time, ymin=lwr.pred, ymax=upr.pred), alpha=0.1, inherit.aes=F, fill="blue") + 
+  geom_ribbon(data=df.new, aes(x=time, ymin=lwr.conf, ymax=upr.conf), alpha=0.2, inherit.aes=F, fill="#339900") +  
+  geom_line(data=df.new, aes(x=time, y=fit), colour="#339900", size=1)
+```
+Increasing predicted quaterly sales volume going on.
 
 ### 1.5 We want the predicted sales volume to be equal to 100 at time 0. Modify your final model in order to take this constraint into account.
 
-?
+</br>
+
+The sales volume predicted by the model should be 100 at time 0. This constraint can easily be achieved by fixing the intercept of the regression model to 100. On the following graph we see in greeen our final model with the constraint taken into account, and in red the previous model that did not take the constraint into account: 
+</br>
+
+```{r}
+intercept <- 100
+poly_reg_100int <- lm(y ~ 0 + time + I(time^2) + I(time^3) + I(time^4) + I(time^5) + I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)), offset=rep(intercept, length(time)),data=data)
+
+pl + geom_line(data=data, aes(x=time, y=predict(poly_reg_100int)), size=0.5, colour="forestgreen") + geom_line(data=data, aes(x=time, y=predict(poly_reg_5)), size=0.5, colour="red") + ggtitle(" Graph")
+```
+```{r}
+print(coef(poly_reg_100int))
+```
 
 ## 2 Fitting a linear mixed effects model
-
+The file sales30.csv now consists of quarterly sales volumes (still in % and indexed to the time 0) of 30 different products.
 ```{r}
 sales30 <- read.csv("/Users/haliouanaomie/PolytechniqueS2/MAP566/salesData/sales30.csv")
 head(sales30)
 summary(sales30)
 dim(sales30)
 ```
-The Orthodont data has 630 rows and 3 columns.
+The data consists of 630 observations (rows) and 3 variables (columns): time in months, sales volume y in percentage, product identifier id
+There is one instance per quarter (3 months intervals) and 30 different products in total.
+Let’s scatter plot the data in order to better visualize the relationship between the explanatory variable and the response variable.
 ### 2.1 Plot this data
 
-Let us plot the data, i.e. the time versus y by id:
+Let us plot the data, i.e. the time versus y by id,  We plot 30 graphs, each one corresponding to one of the 30 differents products:
 ```{r}
 library(ggplot2)
-theme_set(theme_bw())
-pl <- ggplot(data=sales30, aes(x=time,y=y,color=id)) + geom_point() + geom_line()
+options(repr.plot.width=4, repr.plot.height=3)
+pl <- ggplot(data=sales30, aes(x=time, y=y, color=id)) + geom_point(size=0.3) + facet_wrap(~id, nrow=6, ncol=5) + xlab("Time t (in months)") + ylab("Quarterly sales volumes (in %)") + theme(text=element_text(size=6), element_line(size=0.2))
 pl
 ```
+We observe on the above scatter plots that for most of the products, there is a clear increasing trend in the data as it was the case for the sales1.csv dataset. However, some of the products do not share this pattern. For example, products 13, 14, 20, and 23 seem to have a rather constant periodic trend. Products 12 and 24 on the other hand seem to have a slightly decreasing trend over the time.
+For each product, it seems that the sale volume follows a periodical pattern as for the previous exercise with a same period of 1 year but different magnitudes. 
 
-### 2.2 Fit a Linear Model to this data
+### 2.2 Fit the model used previously for fitting the first series to this data and comment the results
 
 A linear model by definition assumes there is a linear relationship between the observations (yj,1≤j≤n) and m series of variables `(x(1)j,…,x(m)j,1≤j≤n)` :` yj=c0+c1x(1)j+c2x(2)j+⋯+cmx(m)j+ej,1≤j≤n,` where `(ej,1≤j≤n)`is a sequence of residual errors.
 In our example, the observations `(yj,1≤j≤n)` are the n=630 measured distances.
 
 We are fitting the second model used previously.
 ```{r}
-lm2 <- lm(y~time+id, data=sales30)
-summary(lm2)
+model30 <- lm(y ~ time + I(time^2) + I(time^3) + I(time^4) + I(time^5) + I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)), data=sales30)
+#lm2 <- lm(y~time+id, data=sales30)
+summary(model30)
 ``` 
 ```{r}
-sales30$pred.lm2 <- predict(lm2)
-pl + geom_line(data=sales30,aes(x=time,y=pred.lm2)) + facet_wrap(~id)
+sales30$pred.lm2 <- predict(model30)
+pl + geom_line(data=sales30,aes(x=time,y=pred.lm2)) + facet_wrap(~id) + xlab("Time t") + ylab("Quarterly sales volumes (in %)")
 ```
-We see that the model seems to underestimate or overestimate the individual data.
+We observe that our model trained on the whole set clearly underestimate and overestimate the sales volume of most products. Intuitively we understand that each product being different, the id variable has an importance in our prediction and that for example, by splitting the data set into 30 data sets corresponding to the 30 products, we could train our models on the different products independently. However this is not what we want to do, otherwise we would have as many models as products, we have to consider the identifier directly into the model!
+
+```{r}
+par(mfrow = c(1, 2))
+plot(model30, which=c(1,2))
+```
+The residual plot don't shows a slight (decreasing and increasing) trend which suggests that the residuals are identically distributed around 0. Furthermore, the QQ plot shows that the extreme residual values are not the extreme values of a normal distribution. This is due to the fact that several ids are involved and not just one id this time.
+
+```{r}
+hist(resid(model30))
+```
+Histogram of the Residuals show that the deviation is normally distributed
 
 ### 2.3 Fit a mixed effect model to this data
 
@@ -231,14 +324,20 @@ The model is called linear mixed effects model because it is a linear combinatio
 
 ```{r}
 library(lme4)
-lme1 <- lmer(y ~ time  + (1|id), data=sales30)
+library(Matrix)
+lme1 <- lmer(y ~ time + I(time^2) + I(time^3) + I(time^4) + I(time^5) + I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)) + (1|id), data=sales30)
 summary(lme1)
 ```
+The model summary doesn't show you all of these; it only tells you what the variance (and standard deviation) of each group of coefficients is. It's still possible to find out what the coefficients for the random effects of subject is by calling the function ranef on the model:
+```{r}
+ranef(lme1)
+```
+We can see, for example, that subjects number 24 responded exceptionally slowly and subjects number 4, very quickly. 
 ```{r}
 pl + geom_line(aes(x=time,y=predict(lme1),color=id)) + facet_wrap(~id)
 ```
 ```{r}
-lme2 <- lmer(y ~ time  + (-1+time|id), data=sales30)
+lme2 <- lmer(y ~ time + I(time^2) + I(time^3) + I(time^4) + I(time^5) + I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)) + (-1+time|id), data=sales30)
 summary(lme2)
 ```
 
@@ -246,7 +345,7 @@ summary(lme2)
 pl + geom_line(aes(x=time,y=predict(lme2),color=id)) + facet_wrap(~id)
 ```
 ```{r}
-lme3 <- lmer(y ~ time  + (time|id), data=sales30)
+lme3 <- lmer(y ~ time + I(time^2) + I(time^3) + I(time^4) + I(time^5) + I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)) + (time|id), data=sales30)
 summary(lme3)
 ```
 
@@ -265,6 +364,7 @@ We can compute 95% profile-based confidence intervals for the parameters of the 
 ```{r}
 confint(lme2)
 ```
+These numbers refer to how percentage of the data is bellow of these limits. So, we have 2.5% of the value bellow 99.85 and 97.5% of the value bellow 100.63.
 
 Parametric bootstrap can also be used for computing confidence intervals:
 ```{r}
@@ -282,9 +382,68 @@ print(d[[1]])
 Let us plot the predicted time together with the observed time.
 
 ```{r}
- pl + geom_line(data=sales30 ,aes(x=time,y=predict(lme2))) + facet_wrap(~ id )
+ pl + geom_line(data=sales30 ,aes(x=time,y=predict(lme2))) + facet_wrap(~ id ) + xlab("Time t") + ylab("Quarterly sales volumes (in %)")
 ```
 We can also check that the predicted distances for a given individual (“id=2” for instance)
 ```{r}
 subset(sales30,id == "2")
+```
+Prediction are in accordance with the current value.
+
+### 2.5 How could you take into account the previous constraint (predicted sales volume are all equal to 100 at time 0)?
+
+We would just have to fix the intercept of the regression model to 100 by adding an offset to the model (same as previous exercise)
+
+## 3. Individual prediction
+
+The file salesNew.csv consists of quarterly sales volumes of another product.
+
+The final model of part 2 will be used here. In other words, you should not use the new data to fit any new model.
+
+### 3.1 Suppose first that we don’t have any data for this product (although data are available for this product, we act as if we do not know them). How can we predict the sales volumes for this product? plot the data and the prediction on a same graph.
+
+```{r}
+salesnew <- read.csv("/Users/haliouanaomie/PolytechniqueS2/MAP566/salesData/salesNew.csv")
+head(salesnew)
+dim(salesnew)
+```
+
+
+```{r}
+library(ggplot2)
+theme_set(theme_bw())
+
+pl <- ggplot(salesnew) + geom_point(aes(x=time, y=y), size=2, colour="#993399") + xlab("Time t (in months)") + ylab("Quarterly sales volumes (in %)")
+print(pl)
+```
+
+Given that we don't have any data for this new product we are going to predict the sales volumes using our previous model trained on the 30 products of exercise 2: 
+
+```{r}
+model30 <- lm(y ~ time + I(time^2) + I(time^3) + I(time^4) + I(time^5) + I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)), data=data30)
+summary(model30)
+```
+```{r}
+predictions <- predict(model30, newdata=salesnew)
+
+data.frame(salesnew, predictions)
+
+par(mfrow=c(1,2))
+plot(predictions, salesnew$y)
+
+```
+</br>
+</br>
+ 
+ 
+**Question 2: Suppose now that only the first data at time 1 is available for this product. Compute and plot the new predictions.**
+</br>
+
+```{r}
+first_data <- head(salesnew, 1)$y
+first_data
+```
+```{r}
+model30 <- lm(y ~ 0 + time + I(time^2) + I(time^3) + I(time^4) + I(time^5) + I(cos(2*pi*time/T)) + I(sin(2*pi*time/T)), offset=rep(first_data, length(time)), data=data30)
+summary(model30)
 ```
