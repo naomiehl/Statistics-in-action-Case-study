@@ -1,4 +1,4 @@
-# Statistics Case Study 2
+# Case study 2: linear models and linear mixed effects models
 MAP566 -  Statistics in Action
 
 ## Preliminary comments:
